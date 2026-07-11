@@ -86,6 +86,14 @@ const env = {
     url: process.env.CLIENT_URL ?? 'http://localhost:5173',
   },
 
+  /** Orígenes extra CORS (previews Vercel, dominios custom). Separados por coma. */
+  cors: {
+    extraOrigins: (process.env.CORS_ORIGINS ?? '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean),
+  },
+
   jwt: {
     accessSecret: process.env.JWT_ACCESS_SECRET ?? 'dev-access-secret-change-me',
     refreshSecret: process.env.JWT_REFRESH_SECRET ?? 'dev-refresh-secret-change-me',
@@ -109,7 +117,8 @@ const env = {
     gracePeriodDays: parseInt(process.env.SUBSCRIPTION_GRACE_PERIOD_DAYS ?? '5', 10),
     /** Cron diario del motor (node-cron). Default: 03:00 America-friendly UTC. */
     schedulerCron: process.env.SUBSCRIPTION_SCHEDULER_CRON ?? '0 8 * * *',
-    schedulerEnabled: process.env.SUBSCRIPTION_SCHEDULER_ENABLED !== 'false',
+    schedulerEnabled:
+      process.env.SUBSCRIPTION_SCHEDULER_ENABLED !== 'false' && !process.env.VERCEL,
     /** Días a otorgar al reactivar si la fecha ya venció. */
     reactivationDefaultDays: parseInt(
       process.env.SUBSCRIPTION_REACTIVATION_DAYS ?? '30',
@@ -131,7 +140,7 @@ const env = {
     defaultProvider: process.env.BACKUP_STORAGE_PROVIDER ?? 'local',
     /** Cron horario: evalúa orgs due cada hora. */
     schedulerCron: process.env.BACKUP_SCHEDULER_CRON ?? '5 * * * *',
-    schedulerEnabled: process.env.BACKUP_SCHEDULER_ENABLED !== 'false',
+    schedulerEnabled: process.env.BACKUP_SCHEDULER_ENABLED !== 'false' && !process.env.VERCEL,
   },
 
   verificationTokenExpiresHours: parseInt(process.env.VERIFICATION_TOKEN_EXPIRES_HOURS ?? '24', 10),

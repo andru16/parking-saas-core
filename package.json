@@ -4,10 +4,10 @@
   "private": true,
   "description": "Parking SaaS - API Backend",
   "type": "module",
-  "main": "src/server.js",
+  "main": "api/index.js",
   "scripts": {
-    "dev": "nodemon src/server.js",
-    "start": "node src/server.js",
+    "dev": "nodemon src/start.js",
+    "start": "node src/start.js",
     "job:subscriptions": "node src/jobs/runSubscriptionScheduler.js",
     "job:backups": "node src/jobs/runBackupScheduler.js",
     "lint": "eslint src/",

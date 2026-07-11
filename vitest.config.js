@@ -19,7 +19,8 @@ export default defineConfig({
       reportsDirectory: './coverage',
       include: ['src/**/*.js'],
       exclude: [
-        'src/server.js',
+        'src/start.js',
+        'src/ready.js',
         'src/jobs/**',
         'src/database/migrations/**',
         '**/index.js',

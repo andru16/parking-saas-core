@@ -19,12 +19,14 @@ import membersRoutes from '#modules/member/members.routes.js';
 import vehiclesRoutes from '#modules/vehicle/vehicles.routes.js';
 import parkingMembershipsRoutes from '#modules/parkingMembership/parkingMemberships.routes.js';
 import superAdminRoutes from '#modules/superAdmin/superAdmin.routes.js';
+import cronRoutes from '#modules/cron/cron.routes.js';
 
 const router = Router();
 
 router.use('/signup', signupRoutes);
 router.use('/auth', authRoutes);
 router.use('/admin', superAdminRoutes);
+router.use('/internal/cron', cronRoutes);
 router.use('/setup', setupRoutes);
 router.use('/settings', settingsRoutes);
 router.use('/printing', printingRoutes);

@@ -28,8 +28,7 @@ export const connectDatabase = async (uri = process.env.MONGODB_URI ?? env.mongo
     await mongoose.connect(uri, env.mongodb.options);
   } catch (error) {
     console.error('Error al conectar con MongoDB:', error.message);
-    if (process.env.NODE_ENV === 'test') throw error;
-    process.exit(1);
+    throw error;
   }
 };
 
