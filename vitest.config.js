@@ -1,0 +1,53 @@
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    globals: true,
+    environment: 'node',
+    include: ['tests/**/*.test.js'],
+    setupFiles: ['./tests/setupEnv.js'],
+    globalSetup: ['./tests/globalSetup.js'],
+    fileParallelism: false,
+    sequence: { concurrent: false },
+    hookTimeout: 120_000,
+    testTimeout: 60_000,
+    pool: 'forks',
+    reporters: ['default'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'json-summary'],
+      reportsDirectory: './coverage',
+      include: ['src/**/*.js'],
+      exclude: [
+        'src/server.js',
+        'src/jobs/**',
+        'src/database/migrations/**',
+        '**/index.js',
+      ],
+      thresholds: {
+        lines: 20,
+        functions: 15,
+        branches: 15,
+        statements: 20,
+      },
+    },
+    env: {
+      NODE_ENV: 'test',
+      MONGODB_USE_TRANSACTIONS: 'false',
+      JWT_ACCESS_SECRET: 'test-access-secret-at-least-32-characters-long',
+      JWT_REFRESH_SECRET: 'test-refresh-secret-at-least-32-characters-long',
+      JWT_ACCESS_EXPIRES: '15m',
+      JWT_REFRESH_EXPIRES: '7d',
+      RATE_LIMIT_API_ENABLED: 'false',
+      RATE_LIMIT_LOGIN_MAX: '100',
+      RATE_LIMIT_SIGNUP_MAX: '100',
+      RATE_LIMIT_REFRESH_MAX: '100',
+      BACKUP_SCHEDULER_ENABLED: 'false',
+      SUBSCRIPTION_SCHEDULER_ENABLED: 'false',
+      SUPER_ADMIN_EMAIL: 'superadmin@parkingsaas.test',
+      SUPER_ADMIN_PASSWORD: 'SuperAdminTest1!',
+      APP_URL: 'http://localhost:3000',
+      CLIENT_URL: 'http://localhost:5173',
+    },
+  },
+});

@@ -1,0 +1,28 @@
+import { body } from 'express-validator';
+
+export const updatePlatformSettingsValidation = [
+  body('branding').optional().isObject(),
+  body('branding.platformName').optional().isString().trim().isLength({ min: 1, max: 120 }),
+  body('branding.logoUrl').optional({ nullable: true }).isString(),
+  body('branding.faviconUrl').optional({ nullable: true }).isString(),
+  body('branding.primaryColor').optional().isString().trim(),
+  body('branding.secondaryColor').optional().isString().trim(),
+  body('maintenance').optional().isObject(),
+  body('maintenance.enabled').optional().isBoolean(),
+  body('maintenance.message').optional().isString().trim().isLength({ max: 500 }),
+  body('security').optional().isObject(),
+  body('security.maxSessionMinutes').optional().isInt({ min: 5, max: 10080 }),
+  body('security.maxLoginAttempts').optional().isInt({ min: 3, max: 100 }),
+  body('security.loginWindowMinutes').optional().isInt({ min: 1, max: 1440 }),
+  body('security.passwordMinLength').optional().isInt({ min: 6, max: 128 }),
+  body('security.passwordRequireUppercase').optional().isBoolean(),
+  body('security.passwordRequireNumber').optional().isBoolean(),
+  body('security.passwordRequireSpecial').optional().isBoolean(),
+  body('saas').optional().isObject(),
+  body('saas.defaultTrialDays').optional().isInt({ min: 1, max: 365 }),
+  body('saas.gracePeriodDays').optional().isInt({ min: 0, max: 90 }),
+  body('defaults').optional().isObject(),
+  body('defaults.timezone').optional().isString().trim(),
+  body('defaults.language').optional().isString().trim(),
+  body('defaults.currency').optional().isString().trim().isLength({ min: 3, max: 3 }),
+];
