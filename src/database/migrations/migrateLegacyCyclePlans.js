@@ -10,6 +10,7 @@ import { OPERATIONAL_SUBSCRIPTION_STATUSES } from '#modules/subscription/subscri
 
 const LEGACY_NAME_REGEX = /^(mensual|trimestral|semestral|anual|monthly|quarterly|semiannual|annual)$/i;
 
+
 /**
  * Migra Organizations fuera de planes cycle-as-plan (Mensual, Trimestral, …)
  * hacia planes comerciales (por defecto Starter), preservando fechas y ciclo.
