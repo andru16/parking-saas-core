@@ -14,8 +14,16 @@ const app = express();
 
 app.set('trust proxy', 1);
 
-app.use(helmet());
+// CORS antes de helmet/rutas para que el preflight OPTIONS tenga headers
 app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
+
+app.use(
+  helmet({
+    // API consumida desde otro origen (frontend Vercel)
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  }),
+);
 app.use(morgan(env.isDevelopment ? 'dev' : 'combined'));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));

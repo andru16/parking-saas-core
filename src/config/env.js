@@ -17,7 +17,6 @@ const requiredInProduction = [
   'JWT_ACCESS_SECRET',
   'JWT_REFRESH_SECRET',
   'APP_URL',
-  'CLIENT_URL',
   'SUPER_ADMIN_PASSWORD',
 ];
 
@@ -28,10 +27,22 @@ const DEV_SECRET_MARKERS = [
   'change-this-refresh-secret-in-production',
 ];
 
+const resolveFrontendUrl = () => {
+  const raw =
+    process.env.FRONTEND_URL?.trim() ||
+    process.env.CLIENT_URL?.trim() ||
+    (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5173');
+  return raw.replace(/\/+$/, '');
+};
+
 const validateEnv = () => {
   if (!isProduction) return;
 
   const missing = requiredInProduction.filter((key) => !process.env[key]?.trim());
+  const frontendUrl = resolveFrontendUrl();
+  if (!frontendUrl) {
+    missing.push('FRONTEND_URL (o CLIENT_URL)');
+  }
 
   if (missing.length > 0) {
     const where = process.env.VERCEL
@@ -63,6 +74,8 @@ const validateEnv = () => {
 
 validateEnv();
 
+const frontendUrl = resolveFrontendUrl() || 'http://localhost:5173';
+
 const env = {
   nodeEnv,
   isDevelopment,
@@ -88,11 +101,12 @@ const env = {
     url: process.env.APP_URL ?? 'http://localhost:3000',
   },
 
+  /** URL del frontend (CORS + cookies). Preferir FRONTEND_URL; CLIENT_URL sigue soportado. */
   client: {
-    url: process.env.CLIENT_URL ?? 'http://localhost:5173',
+    url: frontendUrl,
   },
 
-  /** Orígenes extra CORS (previews Vercel, dominios custom). Separados por coma. */
+  /** Orígenes CORS adicionales (previews Vercel, dominios custom). Separados por coma. */
   cors: {
     extraOrigins: (process.env.CORS_ORIGINS ?? '')
       .split(',')
