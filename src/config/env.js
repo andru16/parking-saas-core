@@ -1,8 +1,8 @@
 import dotenv from 'dotenv';
 
-// En test, Vitest/globalSetup ya inyectan env; no recargar .env (evita pisar MONGODB_URI).
-if (process.env.NODE_ENV !== 'test') {
-  dotenv.config();
+// Local: cargar .env. En Vercel las vars vienen del Project Settings (no hay .env desplegado).
+if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
+  dotenv.config({ quiet: true });
 }
 
 const nodeEnv = process.env.NODE_ENV ?? 'development';
@@ -18,6 +18,7 @@ const requiredInProduction = [
   'JWT_REFRESH_SECRET',
   'APP_URL',
   'CLIENT_URL',
+  'SUPER_ADMIN_PASSWORD',
 ];
 
 const DEV_SECRET_MARKERS = [
@@ -33,7 +34,12 @@ const validateEnv = () => {
   const missing = requiredInProduction.filter((key) => !process.env[key]?.trim());
 
   if (missing.length > 0) {
-    throw new Error(`Variables de entorno obligatorias faltantes: ${missing.join(', ')}`);
+    const where = process.env.VERCEL
+      ? 'Configúralas en Vercel → Project → Settings → Environment Variables (Production) y redespliega.'
+      : 'Defínelas en core/.env o en el entorno del proceso.';
+    throw new Error(
+      `Variables de entorno obligatorias faltantes: ${missing.join(', ')}. ${where}`,
+    );
   }
 
   const access = process.env.JWT_ACCESS_SECRET ?? '';
@@ -50,7 +56,7 @@ const validateEnv = () => {
   }
 
   const saPassword = process.env.SUPER_ADMIN_PASSWORD ?? '';
-  if (!saPassword || saPassword === 'change-this-password-in-production') {
+  if (saPassword === 'change-this-password-in-production') {
     throw new Error('SUPER_ADMIN_PASSWORD debe definirse con un valor seguro en producción');
   }
 };
