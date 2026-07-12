@@ -112,6 +112,13 @@ const env = {
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean),
+    /**
+     * Permitir cualquier https://*.vercel.app (previews).
+     * Default: true en Vercel. Desactivar con CORS_ALLOW_VERCEL_PREVIEWS=false.
+     */
+    allowVercelPreviews:
+      process.env.CORS_ALLOW_VERCEL_PREVIEWS === 'true' ||
+      (process.env.CORS_ALLOW_VERCEL_PREVIEWS !== 'false' && Boolean(process.env.VERCEL)),
   },
 
   jwt: {
