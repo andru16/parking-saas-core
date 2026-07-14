@@ -1,7 +1,31 @@
 import { body, param, query } from 'express-validator';
+import {
+  assertBotGuard,
+  assertEmail,
+  BOT_REJECT_MESSAGE,
+  EMAIL_MESSAGE,
+} from '#utils/fieldValidation.js';
 
 export const loginValidation = [
-  body('email').trim().isEmail().withMessage('Correo inválido').normalizeEmail(),
+  body().custom((_, { req }) =>
+    assertBotGuard({
+      website: req.body?.website,
+      formStartedAt: req.body?.formStartedAt,
+    }),
+  ),
+  body('website').optional({ values: 'falsy' }).isString().isLength({ max: 0 }).withMessage(BOT_REJECT_MESSAGE),
+  body('formStartedAt')
+    .notEmpty()
+    .withMessage(BOT_REJECT_MESSAGE)
+    .isNumeric()
+    .withMessage(BOT_REJECT_MESSAGE),
+  body('email')
+    .trim()
+    .notEmpty()
+    .withMessage('El correo es obligatorio')
+    .custom((value) => assertEmail(value))
+    .withMessage(EMAIL_MESSAGE)
+    .normalizeEmail(),
   body('password').notEmpty().withMessage('La contraseña es obligatoria'),
 ];
 

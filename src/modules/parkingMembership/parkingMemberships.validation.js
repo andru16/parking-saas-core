@@ -1,4 +1,11 @@
 import { body, param, query } from 'express-validator';
+import {
+  assertEmail,
+  assertPersonName,
+  assertPhone,
+  EMAIL_MESSAGE,
+  PHONE_MESSAGE,
+} from '#utils/fieldValidation.js';
 
 export const membershipIdParam = [param('id').isMongoId()];
 
@@ -15,11 +22,27 @@ export const createMembershipValidation = [
   body('plate').optional().isString().trim().isLength({ min: 3, max: 15 }),
   body('vehicleCategoryId').optional().isMongoId(),
   body('member').optional().isObject(),
-  body('member.name').optional().trim().notEmpty().isLength({ max: 150 }),
+  body('member.name')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('El nombre del cliente es obligatorio')
+    .isLength({ max: 150 })
+    .custom((value) => assertPersonName(value, 'El nombre')),
   body('member.documentType').optional().isIn(['CC', 'CE', 'NIT', 'PASSPORT', 'OTHER']),
   body('member.documentNumber').optional({ nullable: true }).isString().trim().isLength({ max: 30 }),
-  body('member.email').optional({ nullable: true }).isEmail().normalizeEmail(),
-  body('member.phone').optional({ nullable: true }).isString().trim().isLength({ max: 20 }),
+  body('member.email')
+    .optional({ values: 'falsy' })
+    .trim()
+    .custom((value) => assertEmail(value))
+    .withMessage(EMAIL_MESSAGE)
+    .normalizeEmail(),
+  body('member.phone')
+    .optional({ values: 'falsy' })
+    .trim()
+    .isLength({ max: 20 })
+    .custom((value) => assertPhone(value))
+    .withMessage(PHONE_MESSAGE),
   body('member.address').optional({ nullable: true }).isString().trim().isLength({ max: 300 }),
   body('member.notes').optional({ nullable: true }).isString().trim().isLength({ max: 500 }),
   body().custom((_, { req }) => {

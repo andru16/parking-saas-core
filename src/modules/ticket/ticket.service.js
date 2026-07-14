@@ -1,6 +1,7 @@
 import Ticket from './ticket.model.js';
 import VehicleCategory from '#modules/vehicleCategory/vehicleCategory.model.js';
 import { ApiError } from '#utils/ApiError.js';
+import { resolveCategoryFromPlate, normalizePlate } from '#utils/colombianPlate.js';
 import { auditService } from '#services/audit/audit.service.js';
 import { cashRegisterService } from '#modules/cashRegister/cashRegister.service.js';
 import { paymentService } from '#modules/payment/payment.service.js';
@@ -189,13 +190,32 @@ export class TicketService {
     }
 
     if (!vehicle) {
-      if (!payload.vehicleCategoryId) {
+      let categoryId = payload.vehicleCategoryId;
+
+      if (!categoryId && payload.plate) {
+        const activeCategories = await VehicleCategory.find({
+          organizationId,
+          isActive: true,
+        })
+          .select('name icon')
+          .lean();
+
+        const resolved = resolveCategoryFromPlate(payload.plate, activeCategories);
+        if (resolved.message && resolved.reason === 'plate_kind_mismatch') {
+          throw new ApiError(400, resolved.message);
+        }
+        if (resolved.categoryId) {
+          categoryId = resolved.categoryId;
+        }
+      }
+
+      if (!categoryId) {
         throw new ApiError(400, 'Seleccione la categoría del vehículo para registrar el ingreso');
       }
 
       vehicle = await vehicleService.quickRegister(organizationId, {
-        plate: payload.plate,
-        vehicleCategoryId: payload.vehicleCategoryId,
+        plate: payload.plate ? normalizePlate(payload.plate) : payload.plate,
+        vehicleCategoryId: categoryId,
         notes: payload.notes,
       });
       vehicleAutoRegistered = true;

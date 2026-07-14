@@ -1,5 +1,18 @@
 import { body, param } from 'express-validator';
 import { SETTINGS_SECTION_ORDER } from '#services/settings-center/constants.js';
+import {
+  ALLOWED_CURRENCIES,
+  ALLOWED_DATE_FORMATS,
+  ALLOWED_TIMEZONES,
+  assertAddress,
+  assertBusinessName,
+  assertEmail,
+  assertPhone,
+  assertPlaceName,
+  assertTaxId,
+  EMAIL_MESSAGE,
+  PHONE_MESSAGE,
+} from '#utils/fieldValidation.js';
 
 export const sectionKeyParamValidation = [
   param('sectionKey')
@@ -8,16 +21,56 @@ export const sectionKeyParamValidation = [
 ];
 
 export const generalValidation = [
-  body('commercialName').trim().notEmpty().withMessage('El nombre comercial es obligatorio'),
-  body('address').trim().notEmpty().withMessage('La dirección es obligatoria'),
-  body('city').trim().notEmpty().withMessage('La ciudad es obligatoria'),
-  body('country').trim().notEmpty().withMessage('El país es obligatorio'),
-  body('phone').trim().notEmpty().withMessage('El teléfono es obligatorio'),
-  body('email').trim().isEmail().withMessage('Correo inválido').normalizeEmail(),
-  body('timezone').trim().notEmpty().withMessage('La zona horaria es obligatoria'),
-  body('currency').trim().isLength({ min: 3, max: 3 }).withMessage('Moneda ISO de 3 caracteres'),
-  body('dateFormat').trim().notEmpty().withMessage('El formato de fecha es obligatorio'),
+  body('commercialName')
+    .trim()
+    .notEmpty()
+    .withMessage('El nombre comercial es obligatorio')
+    .isLength({ max: 150 })
+    .custom((value) => assertBusinessName(value, 'El nombre comercial')),
+  body('address')
+    .trim()
+    .notEmpty()
+    .withMessage('La dirección es obligatoria')
+    .isLength({ max: 300 })
+    .custom((value) => assertAddress(value)),
+  body('city')
+    .trim()
+    .notEmpty()
+    .withMessage('La ciudad es obligatoria')
+    .isLength({ max: 100 })
+    .custom((value) => assertPlaceName(value, 'La ciudad')),
+  body('country')
+    .trim()
+    .notEmpty()
+    .withMessage('El país es obligatorio')
+    .isLength({ max: 100 })
+    .custom((value) => assertPlaceName(value, 'El país')),
+  body('phone')
+    .trim()
+    .notEmpty()
+    .withMessage('El teléfono es obligatorio')
+    .custom((value) => assertPhone(value))
+    .withMessage(PHONE_MESSAGE),
+  body('email')
+    .trim()
+    .notEmpty()
+    .withMessage('El correo es obligatorio')
+    .custom((value) => assertEmail(value))
+    .withMessage(EMAIL_MESSAGE)
+    .normalizeEmail(),
+  body('timezone').trim().isIn(ALLOWED_TIMEZONES).withMessage('Zona horaria inválida'),
+  body('currency').trim().isIn(ALLOWED_CURRENCIES).withMessage('Moneda inválida'),
+  body('dateFormat').trim().isIn(ALLOWED_DATE_FORMATS).withMessage('Formato de fecha inválido'),
   body('timeFormat').isIn(['12h', '24h']).withMessage('Formato de hora inválido'),
+  body('legalName').optional({ values: 'falsy' }).trim().isLength({ min: 3, max: 150 }),
+  body('taxId')
+    .optional({ values: 'falsy' })
+    .trim()
+    .custom((value) => assertTaxId(value)),
+  body('stateOrDepartment')
+    .optional({ values: 'falsy' })
+    .trim()
+    .custom((value) => assertPlaceName(value, 'El departamento')),
 ];
 
 export const operationalValidation = [
@@ -65,6 +118,10 @@ export const printingValidation = [
   body('showAddress').optional().isBoolean(),
   body('showPhone').optional().isBoolean(),
   body('showTaxId').optional().isBoolean(),
+  body('enableQr').optional().isBoolean(),
+  body('enableBarcode').optional().isBoolean(),
+  body('generateEntryTicket').optional().isBoolean(),
+  body('generateExitTicket').optional().isBoolean(),
   body('welcomeMessage').optional().isString(),
   body('farewellMessage').optional().isString(),
   body('lostTicketPolicy').optional().isString(),
@@ -85,6 +142,17 @@ export const usersValidation = [
 
 export const integrationsValidation = [
   body('integrations').isObject(),
+  body('integrations.whatsapp.phoneNumber')
+    .optional({ values: 'falsy' })
+    .trim()
+    .custom((value) => assertPhone(value))
+    .withMessage(PHONE_MESSAGE),
+  body('integrations.email.fromAddress')
+    .optional({ values: 'falsy' })
+    .trim()
+    .custom((value) => assertEmail(value))
+    .withMessage(EMAIL_MESSAGE)
+    .normalizeEmail(),
 ];
 
 export const sectionValidationMap = {

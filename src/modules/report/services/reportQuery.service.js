@@ -17,6 +17,7 @@ import {
   getAuditModuleLabel,
   humanizeAuditDescription,
 } from '#services/audit/audit.labels.js';
+import { localizeReportRows } from '../utils/reportValueLabels.js';
 
 const { Types } = mongoose;
 
@@ -94,7 +95,7 @@ const REPORT_COLUMNS = {
   ],
   [REPORT_TYPES.USERS]: [
     { key: 'name', label: 'Nombre' },
-    { key: 'email', label: 'Email' },
+    { key: 'email', label: 'Correo' },
     { key: 'role', label: 'Rol' },
     { key: 'status', label: 'Estado' },
     { key: 'lastLoginAt', label: 'Último acceso' },
@@ -150,7 +151,8 @@ export class ReportQueryService {
     const result = await handler();
     return {
       columns: this.getColumns(reportType),
-      ...result,
+      rows: localizeReportRows(result.rows),
+      totalRecords: result.totalRecords,
       pagination: {
         page,
         limit,

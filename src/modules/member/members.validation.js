@@ -1,7 +1,24 @@
 import { body, param, query } from 'express-validator';
+import {
+  assertEmail,
+  assertPersonName,
+  assertPhone,
+  EMAIL_MESSAGE,
+  PHONE_MESSAGE,
+} from '#utils/fieldValidation.js';
 
 export const memberIdParam = [param('memberId').isMongoId()];
 export const vehicleIdParam = [param('vehicleId').isMongoId()];
+
+const assertMemberName = (value, { req }) => {
+  if (req.body.memberType === 'company') {
+    if (typeof value !== 'string' || !value.trim()) {
+      throw new Error('El nombre es obligatorio');
+    }
+    return true;
+  }
+  return assertPersonName(value, 'El nombre');
+};
 
 export const listMembersValidation = [
   query('page').optional().isInt({ min: 1 }).toInt(),
@@ -11,24 +28,55 @@ export const listMembersValidation = [
 ];
 
 export const createMemberValidation = [
-  body('name').trim().notEmpty().isLength({ max: 150 }),
+  body('name')
+    .trim()
+    .notEmpty()
+    .withMessage('El nombre es obligatorio')
+    .isLength({ max: 150 })
+    .custom(assertMemberName),
   body('memberType').optional().isIn(['person', 'company']),
   body('documentType').optional().isIn(['CC', 'CE', 'NIT', 'PASSPORT', 'OTHER']),
   body('documentNumber').optional({ nullable: true }).isString().trim().isLength({ max: 30 }),
-  body('email').optional({ nullable: true }).isEmail().normalizeEmail(),
-  body('phone').optional({ nullable: true }).isString().trim().isLength({ max: 20 }),
+  body('email')
+    .optional({ values: 'falsy' })
+    .trim()
+    .custom((value) => assertEmail(value))
+    .withMessage(EMAIL_MESSAGE)
+    .normalizeEmail(),
+  body('phone')
+    .optional({ values: 'falsy' })
+    .trim()
+    .isLength({ max: 20 })
+    .custom((value) => assertPhone(value))
+    .withMessage(PHONE_MESSAGE),
   body('address').optional({ nullable: true }).isString().trim().isLength({ max: 300 }),
   body('status').optional().isIn(['active', 'inactive']),
   body('notes').optional({ nullable: true }).isString().trim().isLength({ max: 500 }),
 ];
 
 export const updateMemberValidation = [
-  body('name').optional().trim().notEmpty().isLength({ max: 150 }),
+  body('name')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('El nombre es obligatorio')
+    .isLength({ max: 150 })
+    .custom(assertMemberName),
   body('memberType').optional().isIn(['person', 'company']),
   body('documentType').optional().isIn(['CC', 'CE', 'NIT', 'PASSPORT', 'OTHER']),
   body('documentNumber').optional({ nullable: true }).isString().trim().isLength({ max: 30 }),
-  body('email').optional({ nullable: true }).isEmail().normalizeEmail(),
-  body('phone').optional({ nullable: true }).isString().trim().isLength({ max: 20 }),
+  body('email')
+    .optional({ values: 'falsy' })
+    .trim()
+    .custom((value) => assertEmail(value))
+    .withMessage(EMAIL_MESSAGE)
+    .normalizeEmail(),
+  body('phone')
+    .optional({ values: 'falsy' })
+    .trim()
+    .isLength({ max: 20 })
+    .custom((value) => assertPhone(value))
+    .withMessage(PHONE_MESSAGE),
   body('address').optional({ nullable: true }).isString().trim().isLength({ max: 300 }),
   body('status').optional().isIn(['active', 'inactive']),
   body('notes').optional({ nullable: true }).isString().trim().isLength({ max: 500 }),

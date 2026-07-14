@@ -84,6 +84,8 @@ export const DEFAULT_PRINT_CONFIG = Object.freeze({
   copies: 1,
   enableQr: true,
   enableBarcode: true,
+  generateEntryTicket: true,
+  generateExitTicket: true,
   preferredAdapter: 'browser',
   customMessages: {
     entry: '',

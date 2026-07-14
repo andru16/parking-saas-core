@@ -1,22 +1,67 @@
 import { body, param } from 'express-validator';
+import {
+  assertEmail,
+  assertPersonName,
+  assertPhone,
+  EMAIL_MESSAGE,
+  PHONE_MESSAGE,
+} from '#utils/fieldValidation.js';
 
 export const userIdParam = [param('userId').isMongoId()];
 export const roleIdParam = [param('roleId').isMongoId()];
 
 export const createUserValidation = [
-  body('firstName').trim().notEmpty(),
-  body('lastName').trim().notEmpty(),
-  body('email').trim().isEmail().normalizeEmail(),
+  body('firstName')
+    .trim()
+    .notEmpty()
+    .withMessage('El nombre es obligatorio')
+    .isLength({ max: 80 })
+    .custom((value) => assertPersonName(value, 'El nombre')),
+  body('lastName')
+    .trim()
+    .notEmpty()
+    .withMessage('Los apellidos son obligatorios')
+    .isLength({ max: 80 })
+    .custom((value) => assertPersonName(value, 'Los apellidos')),
+  body('email')
+    .trim()
+    .notEmpty()
+    .withMessage('El correo es obligatorio')
+    .custom((value) => assertEmail(value))
+    .withMessage(EMAIL_MESSAGE)
+    .normalizeEmail(),
   body('organizationRoleId').isMongoId(),
-  body('phone').optional({ nullable: true }).isString(),
+  body('phone')
+    .optional({ values: 'falsy' })
+    .trim()
+    .isLength({ max: 20 })
+    .custom((value) => assertPhone(value))
+    .withMessage(PHONE_MESSAGE),
   body('password').optional().isLength({ min: 8 }),
   body('status').optional().isIn(['active', 'inactive']),
 ];
 
 export const updateUserValidation = [
-  body('firstName').optional().trim().notEmpty(),
-  body('lastName').optional().trim().notEmpty(),
-  body('phone').optional({ nullable: true }).isString(),
+  body('firstName')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('El nombre es obligatorio')
+    .isLength({ max: 80 })
+    .custom((value) => assertPersonName(value, 'El nombre')),
+  body('lastName')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('Los apellidos son obligatorios')
+    .isLength({ max: 80 })
+    .custom((value) => assertPersonName(value, 'Los apellidos')),
+  body('phone')
+    .optional({ values: 'falsy' })
+    .trim()
+    .isLength({ max: 20 })
+    .custom((value) => assertPhone(value))
+    .withMessage(PHONE_MESSAGE),
   body('organizationRoleId').optional().isMongoId(),
   body('status').optional().isIn(['active', 'inactive']),
 ];

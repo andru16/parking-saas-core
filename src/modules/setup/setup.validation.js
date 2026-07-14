@@ -1,5 +1,18 @@
 import { body, param } from 'express-validator';
 import { SETUP_STEP_ORDER } from '#services/setup/constants.js';
+import {
+  ALLOWED_CURRENCIES,
+  ALLOWED_DATE_FORMATS,
+  ALLOWED_TIMEZONES,
+  assertAddress,
+  assertBusinessName,
+  assertEmail,
+  assertPhone,
+  assertPlaceName,
+  assertTaxId,
+  EMAIL_MESSAGE,
+  PHONE_MESSAGE,
+} from '#utils/fieldValidation.js';
 
 const savableSteps = SETUP_STEP_ORDER.filter((s) => s !== 'summary');
 
@@ -10,25 +23,71 @@ export const stepKeyParamValidation = [
 ];
 
 export const generalInfoValidation = [
-  body('commercialName').trim().notEmpty().withMessage('El nombre comercial es obligatorio'),
-  body('address').trim().notEmpty().withMessage('La dirección es obligatoria'),
-  body('city').trim().notEmpty().withMessage('La ciudad es obligatoria'),
-  body('country').trim().notEmpty().withMessage('El país es obligatorio'),
-  body('phone').trim().notEmpty().withMessage('El teléfono es obligatorio'),
-  body('email').trim().isEmail().withMessage('Correo inválido').normalizeEmail(),
-  body('timezone').trim().notEmpty().withMessage('La zona horaria es obligatoria'),
-  body('currency').trim().isLength({ min: 3, max: 3 }).withMessage('Moneda ISO de 3 caracteres'),
-  body('dateFormat').trim().notEmpty().withMessage('El formato de fecha es obligatorio'),
+  body('commercialName')
+    .trim()
+    .notEmpty()
+    .withMessage('El nombre comercial es obligatorio')
+    .isLength({ max: 150 })
+    .custom((value) => assertBusinessName(value, 'El nombre comercial')),
+  body('address')
+    .trim()
+    .notEmpty()
+    .withMessage('La dirección es obligatoria')
+    .isLength({ max: 300 })
+    .custom((value) => assertAddress(value)),
+  body('city')
+    .trim()
+    .notEmpty()
+    .withMessage('La ciudad es obligatoria')
+    .isLength({ max: 100 })
+    .custom((value) => assertPlaceName(value, 'La ciudad')),
+  body('country')
+    .trim()
+    .notEmpty()
+    .withMessage('El país es obligatorio')
+    .isLength({ max: 100 })
+    .custom((value) => assertPlaceName(value, 'El país')),
+  body('phone')
+    .trim()
+    .notEmpty()
+    .withMessage('El teléfono es obligatorio')
+    .custom((value) => assertPhone(value))
+    .withMessage(PHONE_MESSAGE),
+  body('email')
+    .trim()
+    .notEmpty()
+    .withMessage('El correo es obligatorio')
+    .custom((value) => assertEmail(value))
+    .withMessage(EMAIL_MESSAGE)
+    .normalizeEmail(),
+  body('timezone')
+    .trim()
+    .isIn(ALLOWED_TIMEZONES)
+    .withMessage('Zona horaria inválida'),
+  body('currency').trim().isIn(ALLOWED_CURRENCIES).withMessage('Moneda inválida'),
+  body('dateFormat').trim().isIn(ALLOWED_DATE_FORMATS).withMessage('Formato de fecha inválido'),
   body('timeFormat').isIn(['12h', '24h']).withMessage('Formato de hora inválido'),
-  body('legalName').optional({ values: 'null' }).trim(),
-  body('taxId').optional({ values: 'null' }).trim(),
-  body('stateOrDepartment').optional({ values: 'null' }).trim(),
+  body('legalName')
+    .optional({ values: 'falsy' })
+    .trim()
+    .isLength({ min: 3, max: 150 })
+    .withMessage('Razón social inválida'),
+  body('taxId')
+    .optional({ values: 'falsy' })
+    .trim()
+    .custom((value) => assertTaxId(value)),
+  body('stateOrDepartment')
+    .optional({ values: 'falsy' })
+    .trim()
+    .custom((value) => assertPlaceName(value, 'El departamento')),
 ];
 
 export const operationalValidation = [
   body('operate24Hours').isBoolean().withMessage('operate24Hours debe ser booleano'),
   body('allowOvercapacity').isBoolean().withMessage('allowOvercapacity debe ser booleano'),
-  body('graceMinutes').isInt({ min: 0 }).withMessage('El tiempo de gracia debe ser >= 0'),
+  body('graceMinutes')
+    .isInt({ min: 0, max: 240 })
+    .withMessage('El tiempo de gracia debe estar entre 0 y 240'),
   body('openTime').custom((value, { req }) => {
     if (!req.body.operate24Hours && !value) {
       throw new Error('Hora de apertura obligatoria (HH:mm)');
@@ -47,7 +106,7 @@ export const operationalValidation = [
     }
     return true;
   }),
-  body('maxCapacity').optional({ nullable: true }).isInt({ min: 1 }),
+  body('maxCapacity').optional({ nullable: true }).isInt({ min: 1, max: 100000 }),
 ];
 
 export const vehicleCategoriesValidation = [
@@ -55,7 +114,8 @@ export const vehicleCategoriesValidation = [
   body('categories.*.name')
     .trim()
     .notEmpty()
-    .withMessage('El nombre de la categoría es obligatorio'),
+    .withMessage('El nombre de la categoría es obligatorio')
+    .isLength({ max: 80 }),
   body('categories.*.color')
     .optional()
     .matches(/^#[0-9A-Fa-f]{6}$/)

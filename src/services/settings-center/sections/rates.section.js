@@ -57,6 +57,10 @@ export class RatesSettingsSection extends SettingsSection {
     }
 
     const keptIds = new Set();
+    const existingBefore = await Rate.find({ organizationId: context.organizationId })
+      .select('_id')
+      .lean();
+    const idsBeforeSave = new Set(existingBefore.map((r) => r._id.toString()));
 
     for (const item of payload.rates) {
       const data = {
@@ -92,28 +96,20 @@ export class RatesSettingsSection extends SettingsSection {
         }
       }
 
-      const existingMatch = await Rate.findOne({
-        organizationId: context.organizationId,
-        vehicleCategoryId: item.vehicleCategoryId,
-        billingMode: item.billingMode,
-        contextType: data.contextType,
-      });
-
-      if (existingMatch) {
-        existingMatch.set(data);
-        await existingMatch.save();
-        keptIds.add(existingMatch._id.toString());
-      } else {
-        const created = await Rate.create(data);
-        keptIds.add(created._id.toString());
-      }
+      // Sin id: siempre crear. No hacer upsert por categoría/modalidad
+      // (fusionaba la 2.ª tarifa con la 1.ª y la hacía desaparecer en el UI).
+      const created = await Rate.create(data);
+      keptIds.add(created._id.toString());
     }
 
+    // Solo elimina tarifas que YA existían antes de este request y no vinieron en el payload.
+    // Así un guardado concurrente que acaba de crear una tarifa no la pierde por una carrera.
     const existing = await Rate.find({ organizationId: context.organizationId });
     for (const rate of existing) {
-      if (!keptIds.has(rate._id.toString())) {
-        await rate.deleteOne();
-      }
+      const id = rate._id.toString();
+      if (keptIds.has(id)) continue;
+      if (!idsBeforeSave.has(id)) continue;
+      await rate.deleteOne();
     }
 
     return this.get(context);

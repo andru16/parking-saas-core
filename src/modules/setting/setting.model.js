@@ -168,6 +168,19 @@ const settingSchema = new Schema(
         type: Boolean,
         default: true,
       },
+      /** Imprimir ticket de ingreso al abrir. */
+      generateEntryTicket: {
+        type: Boolean,
+        default: true,
+      },
+      /**
+       * Imprimir ticket de salida al cobrar.
+       * Algunos parqueaderos solo usan el ticket de ingreso como comprobante.
+       */
+      generateExitTicket: {
+        type: Boolean,
+        default: true,
+      },
       preferredAdapter: {
         type: String,
         enum: ['browser', 'escpos', 'pdf', 'text', 'bluetooth', 'lan', 'usb'],

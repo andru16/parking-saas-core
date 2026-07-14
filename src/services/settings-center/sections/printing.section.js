@@ -39,6 +39,8 @@ export class PrintingSettingsSection extends SettingsSection {
       enableQr: ticket.enableQr ?? DEFAULT_PRINT_CONFIG.enableQr,
       enableBarcode: ticket.enableBarcode ?? DEFAULT_PRINT_CONFIG.enableBarcode,
       preferredAdapter: ticket.preferredAdapter ?? DEFAULT_PRINT_CONFIG.preferredAdapter,
+      generateEntryTicket: ticket.generateEntryTicket ?? DEFAULT_PRINT_CONFIG.generateEntryTicket,
+      generateExitTicket: ticket.generateExitTicket ?? DEFAULT_PRINT_CONFIG.generateExitTicket,
       customMessages: {
         entry: ticket.customMessages?.entry ?? '',
         exit: ticket.customMessages?.exit ?? '',
@@ -75,6 +77,8 @@ export class PrintingSettingsSection extends SettingsSection {
             copies: Math.min(5, Math.max(1, Number(payload.copies) || 1)),
             enableQr: payload.enableQr !== false,
             enableBarcode: payload.enableBarcode !== false,
+            generateEntryTicket: payload.generateEntryTicket !== false,
+            generateExitTicket: payload.generateExitTicket !== false,
             preferredAdapter: payload.preferredAdapter || 'browser',
             customMessages: {
               entry: payload.customMessages?.entry?.trim() ?? '',

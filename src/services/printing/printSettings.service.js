@@ -108,6 +108,8 @@ export class PrintSettingsService {
       enableQr: ticket.enableQr ?? DEFAULT_PRINT_CONFIG.enableQr,
       enableBarcode: ticket.enableBarcode ?? DEFAULT_PRINT_CONFIG.enableBarcode,
       preferredAdapter: ticket.preferredAdapter ?? DEFAULT_PRINT_CONFIG.preferredAdapter,
+      generateEntryTicket: ticket.generateEntryTicket ?? DEFAULT_PRINT_CONFIG.generateEntryTicket,
+      generateExitTicket: ticket.generateExitTicket ?? DEFAULT_PRINT_CONFIG.generateExitTicket,
       customMessages: {
         entry: ticket.customMessages?.entry ?? '',
         exit: ticket.customMessages?.exit ?? '',
