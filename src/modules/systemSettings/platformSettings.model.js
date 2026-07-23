@@ -58,7 +58,14 @@ const platformSettingsSchema = new Schema(
 
     saas: {
       defaultTrialDays: { type: Number, min: 1, max: 365, default: 15 },
+      trialPremiumDays: { type: Number, min: 1, max: 90, default: 3 },
       gracePeriodDays: { type: Number, min: 0, max: 90, default: 5 },
+    },
+
+    support: {
+      email: { type: String, trim: true, default: 'soporte.parkingsaas@gmail.com' },
+      whatsapp: { type: String, trim: true, default: '' },
+      schedule: { type: String, trim: true, default: 'Lun–Vie 8:00–18:00 (COT)' },
     },
 
     defaults: {

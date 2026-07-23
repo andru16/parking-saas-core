@@ -1,5 +1,6 @@
 export { planService, PlanService } from './plan.service.js';
 export { subscriptionService, SubscriptionService } from './subscription.service.js';
+export { planLimitsService, PlanLimitsService } from './planLimits.service.js';
 export {
   BILLING_CYCLE_DAYS,
   BILLING_CYCLE_LABELS,

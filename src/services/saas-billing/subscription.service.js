@@ -42,7 +42,9 @@ export class SubscriptionService {
     if (!sub) {
       sub = await Subscription.findOne({
         organizationId,
-        status: { $in: ['suspended', 'expired', 'cancelled'] },
+        status: {
+          $in: ['awaiting_activation', 'suspended', 'expired', 'cancelled'],
+        },
       })
         .populate('planId')
         .sort({ updatedAt: -1 });
@@ -61,6 +63,9 @@ export class SubscriptionService {
         autoRenewal: false,
         gracePeriodEndsAt: null,
         accessMode: 'none',
+        isTrialPremium: false,
+        isAwaitingActivation: false,
+        isBlocked: false,
       };
     }
 
@@ -69,6 +74,15 @@ export class SubscriptionService {
     const end = new Date(sub.endDate).getTime();
     const daysRemaining = Math.max(0, Math.ceil((end - now) / (24 * 60 * 60 * 1000)));
     const isOperational = OPERATIONAL_SUBSCRIPTION_STATUSES.includes(sub.status);
+    const isAwaitingActivation = sub.status === 'awaiting_activation';
+    const isTrialPremium = sub.status === 'trial_premium';
+    /** Bloqueo total tras fin de trial premium (sin gracia). */
+    const isBlocked = sub.status === 'expired';
+
+    let accessMode = 'read_only';
+    if (isOperational) accessMode = 'full';
+    else if (isAwaitingActivation) accessMode = 'activation_pending';
+    else if (isBlocked) accessMode = 'blocked';
 
     return {
       hasSubscription: true,
@@ -79,6 +93,7 @@ export class SubscriptionService {
             code: plan.code,
             color: plan.color,
             isTrialPlan: plan.isTrialPlan,
+            priceMonthly: plan.pricing?.monthly ?? plan.price ?? null,
             features:
               plan.features instanceof Map
                 ? Object.fromEntries(plan.features)
@@ -98,11 +113,14 @@ export class SubscriptionService {
         }[sub.billingCycle] ?? sub.billingCycle,
       startDate: sub.startDate,
       endDate: sub.endDate,
-      daysRemaining: isOperational ? daysRemaining : 0,
+      daysRemaining: isOperational || isAwaitingActivation ? daysRemaining : 0,
       nextRenewalAt: sub.endDate,
       autoRenewal: sub.autoRenewal,
       gracePeriodEndsAt: sub.gracePeriodEndsAt ?? null,
-      accessMode: isOperational ? 'full' : 'read_only',
+      accessMode,
+      isTrialPremium,
+      isAwaitingActivation,
+      isBlocked,
       scheduledChange: sub.scheduledPlanId
         ? {
             planId: sub.scheduledPlanId,
@@ -141,18 +159,43 @@ export class SubscriptionService {
 
   /**
    * Crea la suscripción inicial (bootstrap / signup).
+   * @param {'trial'|'awaiting_activation'|'active'} [options.mode]
    */
-  async createInitial(organizationId, plan, { session = null, actorUserId = null } = {}) {
+  async createInitial(
+    organizationId,
+    plan,
+    { session = null, actorUserId = null, mode = null } = {},
+  ) {
     await this.#assertNoOperational(organizationId, session);
 
-    const billingCycle = plan.isTrialPlan ? 'trial' : 'monthly';
+    const isTrialPlan = Boolean(plan.isTrialPlan || plan.code === 'trial');
+    const resolvedMode =
+      mode || (isTrialPlan ? 'trial' : 'awaiting_activation');
+
+    const saas = await settingsService.getSaasDefaults();
     const startDate = new Date();
-    const days = resolveCycleDays(billingCycle, {
-      trialDays: (await settingsService.getSaasDefaults()).trialDays,
-      planDefaultDays: plan.defaultDurationDays || plan.durationDays,
-    });
+    let billingCycle = 'monthly';
+    let status = 'awaiting_activation';
+    let days = 1;
+
+    if (resolvedMode === 'trial' || isTrialPlan) {
+      billingCycle = 'trial';
+      status = 'trial';
+      days = saas.trialDays;
+    } else if (resolvedMode === 'awaiting_activation') {
+      billingCycle = 'monthly';
+      status = 'awaiting_activation';
+      days = saas.trialPremiumDays || 3;
+    } else {
+      billingCycle = 'monthly';
+      status = 'active';
+      days = resolveCycleDays(billingCycle, {
+        trialDays: saas.trialDays,
+        planDefaultDays: plan.defaultDurationDays || plan.durationDays,
+      });
+    }
+
     const endDate = this.#addDays(startDate, days);
-    const status = plan.isTrialPlan || plan.code === 'trial' ? 'trial' : 'active';
 
     const [subscription] = await Subscription.create(
       [
@@ -165,7 +208,7 @@ export class SubscriptionService {
           status,
           autoRenewal: false,
           paymentMethod: 'none',
-          amountPaid: priceForCycle(plan, billingCycle),
+          amountPaid: status === 'active' ? priceForCycle(plan, billingCycle) : 0,
           billingProvider: 'none',
         },
       ],
@@ -181,9 +224,183 @@ export class SubscriptionService {
         action: 'created',
         billingCycle,
         actorUserId,
-        notes: 'Suscripción inicial',
+        notes:
+          status === 'awaiting_activation'
+            ? 'Suscripción pendiente de iniciar prueba premium'
+            : 'Suscripción inicial',
       },
       session,
+    );
+
+    return subscription;
+  }
+
+  /**
+   * Inicia la prueba premium (3 días) del plan de pago seleccionado.
+   */
+  async startPremiumTrial(organizationId, actorUserId = null) {
+    const org = await Organization.findById(organizationId);
+    if (!org) throw new ApiError(404, 'Organización no encontrada');
+
+    const saas = await settingsService.getSaasDefaults();
+    const premiumDays = Math.max(1, Number(saas.trialPremiumDays) || 3);
+
+    let subscription = await Subscription.findOne({
+      organizationId,
+      status: { $in: ['awaiting_activation', 'trial_premium', 'expired', 'suspended'] },
+    }).sort({ updatedAt: -1 });
+
+    if (!subscription) {
+      subscription = await Subscription.findOne({ organizationId }).sort({ updatedAt: -1 });
+    }
+
+    if (!subscription) {
+      throw new ApiError(400, 'No hay suscripción para iniciar la prueba');
+    }
+
+    if (subscription.status === 'trial_premium' && subscription.endDate > new Date()) {
+      return subscription;
+    }
+
+    if (subscription.status === 'active') {
+      throw new ApiError(400, 'La suscripción ya está activa');
+    }
+
+    const planId = org.intendedPlanId || subscription.planId;
+    const plan = await planService.resolveActivePlanById(planId);
+
+    const startDate = new Date();
+    const endDate = this.#addDays(startDate, premiumDays);
+
+    subscription.planId = plan._id;
+    subscription.billingCycle = 'monthly';
+    subscription.startDate = startDate;
+    subscription.endDate = endDate;
+    subscription.status = 'trial_premium';
+    subscription.gracePeriodEndsAt = null;
+    await subscription.save();
+
+    org.status = 'trial';
+    org.intendedPlanId = plan._id;
+    await org.save();
+
+    await this.#history(
+      {
+        organizationId,
+        subscriptionId: subscription._id,
+        fromPlanId: null,
+        toPlanId: plan._id,
+        action: 'trial_premium_started',
+        billingCycle: 'monthly',
+        actorUserId,
+        notes: `Prueba premium ${premiumDays} días`,
+      },
+      null,
+    );
+
+    return subscription.populate('planId');
+  }
+
+  /**
+   * Activa la suscripción de pago tras aprobación manual (pre-pasarela).
+   */
+  async activateFromRequest(
+    organizationId,
+    {
+      planId,
+      startDate,
+      endDate,
+      notes = '',
+      actorUserId = null,
+    } = {},
+  ) {
+    const org = await Organization.findById(organizationId);
+    if (!org) throw new ApiError(404, 'Organización no encontrada');
+
+    const plan = await planService.resolveActivePlanById(planId || org.intendedPlanId);
+    let subscription = await Subscription.findOne({ organizationId }).sort({ updatedAt: -1 });
+
+    if (!subscription) {
+      throw new ApiError(400, 'No hay suscripción para activar');
+    }
+
+    const fromPlanId = subscription.planId;
+    const start = startDate ? new Date(startDate) : new Date();
+    const end = endDate
+      ? new Date(endDate)
+      : this.#addDays(
+          start,
+          resolveCycleDays('monthly', {
+            trialDays: (await settingsService.getSaasDefaults()).trialDays,
+            planDefaultDays: plan.defaultDurationDays || plan.durationDays,
+          }),
+        );
+
+    if (end <= start) {
+      throw new ApiError(400, 'La fecha de vencimiento debe ser posterior al inicio');
+    }
+
+    subscription.planId = plan._id;
+    subscription.billingCycle = 'monthly';
+    subscription.startDate = start;
+    subscription.endDate = end;
+    subscription.status = 'active';
+    subscription.gracePeriodEndsAt = null;
+    subscription.amountPaid = priceForCycle(plan, 'monthly');
+    subscription.billingProvider = 'manual';
+    subscription.notes = notes || subscription.notes;
+    await subscription.save();
+
+    org.status = 'active';
+    org.intendedPlanId = plan._id;
+    await org.save();
+
+    await this.#history(
+      {
+        organizationId,
+        subscriptionId: subscription._id,
+        fromPlanId,
+        toPlanId: plan._id,
+        action: 'activation_approved',
+        billingCycle: 'monthly',
+        actorUserId,
+        notes: notes || 'Activación manual aprobada',
+      },
+      null,
+    );
+
+    return subscription.populate('planId');
+  }
+
+  /**
+   * Finaliza la prueba premium sin gracia: bloqueo total hasta activación.
+   */
+  async expirePremiumTrial(subscription, { actorUserId = null, source = 'scheduler' } = {}) {
+    const previous = subscription.status;
+    subscription.status = 'expired';
+    subscription.gracePeriodEndsAt = null;
+    await subscription.save();
+
+    const org = await Organization.findById(subscription.organizationId);
+    if (org && org.status !== 'suspended') {
+      // Mantiene trial para no confundir con suspendida operativa; el bloqueo viene de la sub.
+      org.status = 'trial';
+      await org.save();
+    }
+
+    await this.#history(
+      {
+        organizationId: subscription.organizationId,
+        subscriptionId: subscription._id,
+        fromPlanId: subscription.planId,
+        toPlanId: subscription.planId,
+        action: 'trial_premium_ended',
+        billingCycle: subscription.billingCycle,
+        actorUserId,
+        notes: 'Prueba premium finalizada — acceso bloqueado',
+        metadata: { previous, source },
+      },
+      null,
     );
 
     return subscription;

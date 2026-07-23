@@ -5,6 +5,7 @@ import {
   requireActiveOrganization,
   requirePermission,
 } from '#modules/auth/auth.middleware.js';
+import { requirePlanFeature } from '#middlewares/requirePlanFeature.js';
 import { PERMISSIONS } from '#services/rbac/permission.catalog.js';
 import * as controller from './members.controller.js';
 import {
@@ -18,7 +19,7 @@ import {
 
 const router = Router();
 
-router.use(authenticate, requireActiveOrganization);
+router.use(authenticate, requireActiveOrganization, requirePlanFeature('memberships'));
 
 router.get(
   '/',

@@ -3,6 +3,7 @@ import { catchAsync } from '#utils/catchAsync.js';
 import { sendSuccess } from '#utils/apiResponse.js';
 import signupRoutes from '#modules/signup/signup.routes.js';
 import authRoutes from '#modules/auth/auth.routes.js';
+import publicRoutes from '#modules/public/public.routes.js';
 import setupRoutes from '#modules/setup/setup.routes.js';
 import settingsRoutes from '#modules/settings/settings.routes.js';
 import printingRoutes from '#modules/printing/printing.routes.js';
@@ -18,6 +19,8 @@ import supportRoutes from '#modules/support/support.routes.js';
 import membersRoutes from '#modules/member/members.routes.js';
 import vehiclesRoutes from '#modules/vehicle/vehicles.routes.js';
 import parkingMembershipsRoutes from '#modules/parkingMembership/parkingMemberships.routes.js';
+import sitesRoutes from '#modules/site/sites.routes.js';
+import subscriptionActivationRoutes from '#modules/subscriptionActivation/subscriptionActivation.routes.js';
 import superAdminRoutes from '#modules/superAdmin/superAdmin.routes.js';
 import cronRoutes from '#modules/cron/cron.routes.js';
 
@@ -25,6 +28,7 @@ const router = Router();
 
 router.use('/signup', signupRoutes);
 router.use('/auth', authRoutes);
+router.use('/public', publicRoutes);
 router.use('/admin', superAdminRoutes);
 router.use('/internal/cron', cronRoutes);
 router.use('/setup', setupRoutes);
@@ -39,9 +43,11 @@ router.use('/audit', auditRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/backups', backupRoutes);
 router.use('/support', supportRoutes);
+router.use('/subscription-activation', subscriptionActivationRoutes);
 router.use('/members', membersRoutes);
 router.use('/vehicles', vehiclesRoutes);
 router.use('/parking-memberships', parkingMembershipsRoutes);
+router.use('/sites', sitesRoutes);
 
 router.get(
   '/health',

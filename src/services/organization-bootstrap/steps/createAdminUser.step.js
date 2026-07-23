@@ -23,6 +23,8 @@ export class CreateAdminUserStep extends BootstrapStep {
     }
 
     const hashedPassword = await passwordService.hash(admin.password);
+    const now = new Date();
+    const consentsInput = admin.consents ?? context.input.consents ?? {};
 
     const [adminUser] = await User.create(
       [
@@ -30,13 +32,22 @@ export class CreateAdminUserStep extends BootstrapStep {
           firstName: admin.firstName.trim(),
           lastName: admin.lastName.trim(),
           email,
-          phone: admin.phone?.trim() || null,
+          phone: admin.phone?.trim() || context.input.organization?.phone?.trim() || null,
           password: hashedPassword,
           roleId: null,
           organizationRoleId: context.adminOrganizationRole._id,
           organizationId: context.organization._id,
           status: context.input.userStatus ?? 'active',
           emailVerified: context.input.userStatus === 'pending_verification' ? false : true,
+          consents: {
+            privacyPolicyAccepted: Boolean(consentsInput.privacyPolicyAccepted),
+            privacyPolicyAcceptedAt: consentsInput.privacyPolicyAccepted ? now : null,
+            privacyPolicyVersion: consentsInput.privacyPolicyVersion ?? null,
+            marketingEmail: Boolean(consentsInput.marketingEmail),
+            marketingEmailAt: consentsInput.marketingEmail ? now : null,
+            marketingSms: Boolean(consentsInput.marketingSms),
+            marketingSmsAt: consentsInput.marketingSms ? now : null,
+          },
         },
       ],
       { session },

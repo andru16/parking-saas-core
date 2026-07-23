@@ -27,7 +27,13 @@ export const DEFAULT_PLATFORM_SETTINGS = Object.freeze({
   },
   saas: {
     defaultTrialDays: 15,
+    trialPremiumDays: 3,
     gracePeriodDays: 5,
+  },
+  support: {
+    email: 'soporte.parkingsaas@gmail.com',
+    whatsapp: '',
+    schedule: 'Lun–Vie 8:00–18:00 (COT)',
   },
   defaults: {
     timezone: 'America/Bogota',

@@ -85,7 +85,12 @@ export class OrganizationAccessService {
     const subscription = await Subscription.findOne({
       organizationId,
       status: {
-        $in: [...OPERATIONAL_SUBSCRIPTION_STATUSES, 'suspended', 'expired'],
+        $in: [
+          ...OPERATIONAL_SUBSCRIPTION_STATUSES,
+          'awaiting_activation',
+          'suspended',
+          'expired',
+        ],
       },
     })
       .sort({ updatedAt: -1 })

@@ -9,6 +9,7 @@ import { parkingMembershipQueryService } from '#services/membership/parkingMembe
 import { rateResolverService } from '#services/rate/rateResolver.service.js';
 import { rateCalculatorService } from '#services/rate/rateCalculator.service.js';
 import { vehicleService } from '#services/vehicle/vehicle.service.js';
+import { planLimitsService } from '#services/saas-billing/planLimits.service.js';
 import { TICKET_STATUS, TICKET_AUDIT_ACTIONS } from './constants.js';
 
 const TICKET_POPULATE = [
@@ -169,6 +170,8 @@ export class TicketService {
    * Apertura de ticket — ingreso de vehículo.
    */
   async openEntry(organizationId, userId, payload, auditContext = {}) {
+    await planLimitsService.assertTicketCapacity(organizationId);
+
     const cashRegister = await cashRegisterService.assertOpenSession(organizationId, userId);
 
     let vehicle = null;

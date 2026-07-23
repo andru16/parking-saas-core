@@ -62,7 +62,17 @@ export class SettingsService {
     const platform = await this.getPlatform();
     return {
       trialDays: platform.saas.defaultTrialDays,
+      trialPremiumDays: platform.saas.trialPremiumDays ?? 3,
       gracePeriodDays: platform.saas.gracePeriodDays,
+    };
+  }
+
+  async getSupportContact() {
+    const platform = await this.getPlatform();
+    return {
+      email: platform.support?.email ?? DEFAULT_PLATFORM_SETTINGS.support.email,
+      whatsapp: platform.support?.whatsapp ?? '',
+      schedule: platform.support?.schedule ?? DEFAULT_PLATFORM_SETTINGS.support.schedule,
     };
   }
 
@@ -222,6 +232,7 @@ export class SettingsService {
       maintenance: { ...DEFAULT_PLATFORM_SETTINGS.maintenance, ...d.maintenance },
       security: { ...DEFAULT_PLATFORM_SETTINGS.security, ...d.security },
       saas: { ...DEFAULT_PLATFORM_SETTINGS.saas, ...d.saas },
+      support: { ...DEFAULT_PLATFORM_SETTINGS.support, ...d.support },
       defaults: { ...DEFAULT_PLATFORM_SETTINGS.defaults, ...d.defaults },
       i18n: { ...DEFAULT_PLATFORM_SETTINGS.i18n, ...d.i18n },
       multiCurrency: { ...DEFAULT_PLATFORM_SETTINGS.multiCurrency, ...d.multiCurrency },
@@ -240,6 +251,7 @@ export class SettingsService {
       maintenance: { ...current.maintenance, ...payload.maintenance },
       security: { ...current.security, ...payload.security },
       saas: { ...current.saas, ...payload.saas },
+      support: { ...current.support, ...payload.support },
       defaults: { ...current.defaults, ...payload.defaults },
       i18n: { ...current.i18n, ...payload.i18n },
       multiCurrency: { ...current.multiCurrency, ...payload.multiCurrency },

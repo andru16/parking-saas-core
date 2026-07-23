@@ -55,6 +55,67 @@ export class PlanService {
     return plans.map((p) => this.#toResponse(p, countMap.get(String(p._id)) ?? 0));
   }
 
+  /**
+   * Catálogo público para landing / marketing (sin auth).
+   * Solo planes activos comerciales, con labels de features habilitadas.
+   */
+  async listPublicCatalog() {
+    const [plans, featureDefs] = await Promise.all([
+      this.list({ includeInactive: false, commercialOnly: true }),
+      this.listFeatures(),
+    ]);
+
+    const labelByKey = new Map(featureDefs.map((f) => [f.key, f.label]));
+
+    return plans.map((plan) => {
+      const featureKeys = Object.entries(plan.features || {})
+        .filter(([, enabled]) => Boolean(enabled))
+        .map(([key]) => key);
+
+      const featureLabels = featureKeys
+        .map((key) => labelByKey.get(key) ?? key)
+        .filter(Boolean);
+
+      // Añade límites legibles como bullets de marketing.
+      const limitBullets = [];
+      if (plan.limits?.maxSites != null) {
+        limitBullets.push(
+          plan.limits.maxSites === 1
+            ? '1 sede / estacionamiento'
+            : `Hasta ${plan.limits.maxSites} sedes`,
+        );
+      } else if (!plan.isTrialPlan) {
+        limitBullets.push('Sedes ilimitadas');
+      }
+      if (plan.limits?.maxUsers != null) {
+        limitBullets.push(`Hasta ${plan.limits.maxUsers} usuarios`);
+      } else if (!plan.isTrialPlan) {
+        limitBullets.push('Usuarios ilimitados');
+      }
+      if (plan.limits?.maxCashRegisters != null) {
+        limitBullets.push(`Hasta ${plan.limits.maxCashRegisters} cajas`);
+      }
+
+      const highlights = [...new Set([...limitBullets, ...featureLabels])].slice(0, 8);
+
+      return {
+        id: plan.id,
+        name: plan.name,
+        code: plan.code,
+        description: plan.description,
+        isTrialPlan: plan.isTrialPlan,
+        isRecommended: plan.isRecommended,
+        currency: plan.currency,
+        sortOrder: plan.sortOrder,
+        color: plan.color,
+        pricing: plan.pricing,
+        billingCycles: (plan.billingCycles || []).filter((c) => c.isActive !== false),
+        features: highlights,
+        cta: plan.isTrialPlan ? 'Crear cuenta gratis' : 'Comenzar ahora',
+      };
+    });
+  }
+
   async getById(planId) {
     const plan = await Plan.findById(planId).lean();
     if (!plan) throw new ApiError(404, 'Plan no encontrado');
@@ -265,6 +326,16 @@ export class PlanService {
     const plan = await Plan.findById(planId).session(session);
     if (!plan) throw new ApiError(404, 'El plan indicado no existe');
     if (!plan.isActive) throw new ApiError(400, 'El plan indicado no está activo');
+    return plan;
+  }
+
+  async resolveActivePlanByCode(code, session = null) {
+    const normalized = String(code ?? '')
+      .trim()
+      .toLowerCase();
+    if (!normalized) throw new ApiError(400, 'Código de plan inválido');
+    const plan = await Plan.findOne({ code: normalized, isActive: true }).session(session);
+    if (!plan) throw new ApiError(404, `No hay plan activo con código "${normalized}"`);
     return plan;
   }
 

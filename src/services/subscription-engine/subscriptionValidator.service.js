@@ -9,6 +9,7 @@ import {
 } from './constants.js';
 import { subscriptionLifecycle } from './subscriptionLifecycle.service.js';
 import { subscriptionNotifier } from './subscriptionNotifier.service.js';
+import { subscriptionService } from '#services/saas-billing/subscription.service.js';
 
 /**
  * Evalúa el estado de las suscripciones y decide acciones (avisos / transiciones).
@@ -28,7 +29,7 @@ export class SubscriptionValidator {
     };
 
     const candidates = await Subscription.find({
-      status: { $in: ['trial', 'active', 'grace_period'] },
+      status: { $in: ['trial', 'trial_premium', 'active', 'grace_period'] },
     })
       .select(
         '_id organizationId planId status billingCycle startDate endDate gracePeriodEndsAt remindersSent',
@@ -89,7 +90,31 @@ export class SubscriptionValidator {
       }
     }
 
+    if (subscription.status === 'trial_premium') {
+      const end = new Date(subscription.endDate);
+      if (end <= now) {
+        await subscriptionService.expirePremiumTrial(subscription, { source });
+        result.suspended = true;
+        return result;
+      }
+
+      const remaining = daysUntil(end, now);
+      result.reminderSent = await this.#maybeRemindTrialPremium(subscription, remaining);
+    }
+
     return result;
+  }
+
+  async #maybeRemindTrialPremium(subscription, daysRemaining) {
+    const threshold = matchingReminderThreshold(daysRemaining, [2, 1]);
+    if (threshold == null) return false;
+
+    const key = reminderKey('trial_premium', threshold);
+    if (subscriptionLifecycle.hasReminder(subscription, key)) return false;
+
+    await subscriptionNotifier.notifyTrialExpiring(subscription, { daysRemaining: threshold });
+    await subscriptionLifecycle.markReminderSent(subscription, key);
+    return true;
   }
 
   async #maybeRemindTrial(subscription, daysRemaining) {

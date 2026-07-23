@@ -107,6 +107,13 @@ export const signupValidation = [
     .withMessage('La ciudad no puede superar 100 caracteres')
     .custom((value) => assertPlaceName(value, 'La ciudad')),
 
+  body('organization.stateOrDepartment')
+    .optional({ values: 'falsy' })
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('El departamento no puede superar 100 caracteres')
+    .custom((value) => assertPlaceName(value, 'El departamento')),
+
   body('organization.country')
     .trim()
     .notEmpty()
@@ -122,11 +129,40 @@ export const signupValidation = [
     .withMessage('El teléfono no puede superar 20 caracteres')
     .custom((value) => assertPhone(value))
     .withMessage(PHONE_MESSAGE),
-];
 
+  body('consents.privacyPolicyAccepted')
+    .custom((value) => value === true)
+    .withMessage('Debe aceptar la política de privacidad y tratamiento de datos'),
+
+  body('consents.marketingOptIn')
+    .optional()
+    .isBoolean()
+    .withMessage('Consentimiento de comunicaciones inválido'),
+
+  body('planCode')
+    .optional({ values: 'falsy' })
+    .trim()
+    .isIn(['trial', 'starter', 'professional', 'enterprise'])
+    .withMessage('Plan inválido'),
+
+  body('planId').optional({ values: 'falsy' }).isMongoId().withMessage('planId inválido'),
+];
 export const signupMetadataValidation = [
   body('metadata.channel').optional().isString(),
   body('metadata.referralCode').optional().isString(),
   body('metadata.promoCode').optional().isString(),
   body('metadata.invitationId').optional().isString(),
+];
+
+export const verifyEmailValidation = [
+  body('token').trim().notEmpty().withMessage('El token es obligatorio').isLength({ min: 20 }),
+];
+
+export const resendVerificationValidation = [
+  body('email')
+    .trim()
+    .notEmpty()
+    .withMessage('El correo es obligatorio')
+    .custom((value) => assertEmail(value))
+    .withMessage(EMAIL_MESSAGE),
 ];

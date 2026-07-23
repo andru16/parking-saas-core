@@ -73,6 +73,13 @@ export class BootstrapContext {
       organizationRoles: this.organizationRoles,
       adminUser: this.toSafeAdminUser(),
       plan: this.plan,
+      emailDelivery: this.emailDelivery
+        ? {
+            prepared: Boolean(this.emailDelivery.prepared),
+            sent: Boolean(this.emailDelivery.sent),
+            provider: this.emailDelivery.provider ?? null,
+          }
+        : null,
     };
   }
 

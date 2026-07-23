@@ -16,6 +16,7 @@ export const PLATFORM_PERMISSIONS = Object.freeze({
   NOTIFICATIONS_VIEW: 'platform:notifications:view',
   IMPERSONATE: 'platform:impersonate',
   SUPPORT_MANAGE: 'platform:support:manage',
+  ACTIVATIONS_MANAGE: 'platform:activations:manage',
   INCIDENTS_MANAGE: 'platform:incidents:manage',
   BACKUPS_VIEW: 'platform:backups:view',
   BACKUPS_MANAGE: 'platform:backups:manage',

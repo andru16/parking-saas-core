@@ -43,5 +43,5 @@ export const AUTH_AUDIT_ACTIONS = Object.freeze({
   REFRESH: 'refresh_token',
 });
 
-/** Estados de usuario que permiten sesión activa (verificación de email deshabilitada temporalmente). */
-export const LOGIN_ELIGIBLE_USER_STATUSES = Object.freeze(['active', 'pending_verification']);
+/** Estados de usuario que permiten sesión activa (requiere correo verificado + status active). */
+export const LOGIN_ELIGIBLE_USER_STATUSES = Object.freeze(['active']);

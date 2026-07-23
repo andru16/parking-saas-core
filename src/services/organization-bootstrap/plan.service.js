@@ -21,6 +21,11 @@ export class BootstrapPlanResolver {
       );
     }
   }
+
+  async resolvePlanByCode(planCode, session) {
+    if (!planCode) return this.resolvePlan(null, session);
+    return billingPlanService.resolveActivePlanByCode(planCode, session);
+  }
 }
 
 /** Compat con el registry de bootstrap */

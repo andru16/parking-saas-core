@@ -87,6 +87,20 @@ const userSchema = new Schema(
       default: null,
     },
 
+    /**
+     * Consentimientos legales / marketing (registro).
+     * Sirven para campañas por correo o SMS al contacto dejado.
+     */
+    consents: {
+      privacyPolicyAccepted: { type: Boolean, default: false },
+      privacyPolicyAcceptedAt: { type: Date, default: null },
+      privacyPolicyVersion: { type: String, trim: true, default: null },
+      marketingEmail: { type: Boolean, default: false },
+      marketingEmailAt: { type: Date, default: null },
+      marketingSms: { type: Boolean, default: false },
+      marketingSmsAt: { type: Date, default: null },
+    },
+
     lastLoginAt: {
       type: Date,
       default: null,

@@ -48,6 +48,14 @@ import {
   statusSupportValidation,
   supportIdParam,
 } from '#modules/support/support.validation.js';
+import * as activationController from '#modules/subscriptionActivation/subscriptionActivation.controller.js';
+import {
+  activationIdParam,
+  approveValidation,
+  listActivationValidation,
+  rejectValidation,
+  setStatusValidation,
+} from '#modules/subscriptionActivation/subscriptionActivation.validation.js';
 import { param, query } from 'express-validator';
 
 const router = Router();
@@ -353,6 +361,47 @@ router.patch(
   requirePlatformPermission(PLATFORM_PERMISSIONS.SUPPORT_MANAGE),
   validate([...supportIdParam, ...assignSupportValidation]),
   supportController.platformAssign,
+);
+
+router.get(
+  '/activations/meta',
+  requirePlatformPermission(PLATFORM_PERMISSIONS.ACTIVATIONS_MANAGE, PLATFORM_PERMISSIONS.ORGS_MANAGE),
+  activationController.getMeta,
+);
+
+router.get(
+  '/activations',
+  requirePlatformPermission(PLATFORM_PERMISSIONS.ACTIVATIONS_MANAGE, PLATFORM_PERMISSIONS.ORGS_MANAGE),
+  validate(listActivationValidation),
+  activationController.platformList,
+);
+
+router.get(
+  '/activations/:id',
+  requirePlatformPermission(PLATFORM_PERMISSIONS.ACTIVATIONS_MANAGE, PLATFORM_PERMISSIONS.ORGS_MANAGE),
+  validate(activationIdParam),
+  activationController.platformGetOne,
+);
+
+router.patch(
+  '/activations/:id/status',
+  requirePlatformPermission(PLATFORM_PERMISSIONS.ACTIVATIONS_MANAGE, PLATFORM_PERMISSIONS.ORGS_MANAGE),
+  validate([...activationIdParam, ...setStatusValidation]),
+  activationController.platformSetStatus,
+);
+
+router.post(
+  '/activations/:id/approve',
+  requirePlatformPermission(PLATFORM_PERMISSIONS.ACTIVATIONS_MANAGE, PLATFORM_PERMISSIONS.ORGS_MANAGE),
+  validate([...activationIdParam, ...approveValidation]),
+  activationController.platformApprove,
+);
+
+router.post(
+  '/activations/:id/reject',
+  requirePlatformPermission(PLATFORM_PERMISSIONS.ACTIVATIONS_MANAGE, PLATFORM_PERMISSIONS.ORGS_MANAGE),
+  validate([...activationIdParam, ...rejectValidation]),
+  activationController.platformReject,
 );
 
 export default router;

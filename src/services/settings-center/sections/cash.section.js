@@ -1,6 +1,8 @@
 import CashPoint from '#modules/cashPoint/cashPoint.model.js';
 import Setting from '#modules/setting/setting.model.js';
 import { ApiError } from '#utils/ApiError.js';
+import { planLimitsService } from '#services/saas-billing/planLimits.service.js';
+import { sitesService } from '#modules/site/sites.service.js';
 import { SETTINGS_SECTIONS } from '../constants.js';
 import { SettingsSection } from '../settingsSection.js';
 
@@ -21,6 +23,7 @@ export class CashSettingsSection extends SettingsSection {
     ]);
 
     const cash = setting?.cash ?? {};
+    const { limits } = await planLimitsService.getContext(context.organizationId);
 
     return {
       cashPoints: cashPoints.map((p) => ({
@@ -28,6 +31,7 @@ export class CashSettingsSection extends SettingsSection {
         name: p.name,
         status: p.status,
         displayOrder: p.displayOrder,
+        siteId: p.siteId?.toString() ?? null,
       })),
       policies: {
         suggestedOpeningFloat: cash.suggestedOpeningFloat ?? 0,
@@ -40,6 +44,9 @@ export class CashSettingsSection extends SettingsSection {
         code: t.code,
         status: t.status ?? 'inactive',
       })),
+      limits: {
+        maxCashRegisters: limits.maxCashRegisters ?? null,
+      },
     };
   }
 
@@ -52,6 +59,11 @@ export class CashSettingsSection extends SettingsSection {
       throw new ApiError(400, 'Debe existir al menos un punto de caja');
     }
 
+    await planLimitsService.assertCashRegisterCount(
+      context.organizationId,
+      payload.cashPoints.length,
+    );
+
     const keptIds = new Set();
 
     for (const [index, item] of payload.cashPoints.entries()) {
@@ -59,10 +71,16 @@ export class CashSettingsSection extends SettingsSection {
         throw new ApiError(400, 'Cada caja debe tener un nombre');
       }
 
+      const siteId = await sitesService.resolveSiteIdForCashPoint(
+        context.organizationId,
+        item.siteId,
+      );
+
       const data = {
         name: item.name.trim(),
         status: item.status || 'active',
         displayOrder: item.displayOrder ?? index,
+        siteId,
       };
 
       if (item.id) {

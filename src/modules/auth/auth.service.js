@@ -202,6 +202,21 @@ export class AuthService {
       throw new ApiError(403, 'La cuenta está desactivada');
     }
 
+    if (!user.emailVerified || user.status === 'pending_verification') {
+      await this.#auditLoginFailed({
+        userId: user._id,
+        organizationId: user.organizationId,
+        email: user.email,
+        reason: 'email_not_verified',
+        context,
+      });
+      throw new ApiError(
+        403,
+        'Debe verificar su correo electrónico antes de iniciar sesión. Revise su bandeja de entrada o solicite un nuevo enlace.',
+        [{ code: 'EMAIL_NOT_VERIFIED', email: user.email }],
+      );
+    }
+
     if (!LOGIN_ELIGIBLE_USER_STATUSES.includes(user.status)) {
       await this.#auditLoginFailed({
         userId: user._id,

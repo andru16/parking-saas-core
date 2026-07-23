@@ -102,6 +102,11 @@ export const NOTIFICATION_EVENTS = Object.freeze({
   SUPPORT_TICKET_REPLIED: 'support.ticket_replied',
   SUPPORT_TICKET_STATUS_CHANGED: 'support.ticket_status_changed',
   SUPPORT_TICKET_CLOSED: 'support.ticket_closed',
+
+  // Activación de suscripción
+  ACTIVATION_REQUEST_CREATED: 'subscription.activation_request_created',
+  ACTIVATION_REQUEST_APPROVED: 'subscription.activation_request_approved',
+  ACTIVATION_REQUEST_REJECTED: 'subscription.activation_request_rejected',
 });
 
 export function normalizePriority(priority) {

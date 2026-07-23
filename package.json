@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "nodemon src/start.js",
     "start": "node src/start.js",
+    "db:reset": "node src/database/scripts/resetDatabase.js",
     "job:subscriptions": "node src/jobs/runSubscriptionScheduler.js",
     "job:backups": "node src/jobs/runBackupScheduler.js",
     "lint": "eslint src/",

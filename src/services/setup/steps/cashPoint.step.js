@@ -1,5 +1,7 @@
 import CashPoint from '#modules/cashPoint/cashPoint.model.js';
 import { ApiError } from '#utils/ApiError.js';
+import { planLimitsService } from '#services/saas-billing/planLimits.service.js';
+import { sitesService } from '#modules/site/sites.service.js';
 import { SETUP_STEPS } from '../constants.js';
 import { SetupStep } from './setupStep.js';
 
@@ -27,6 +29,11 @@ export class CashPointStep extends SetupStep {
       throw new ApiError(400, 'Se requiere un arreglo de cajas');
     }
 
+    await planLimitsService.assertCashRegisterCount(
+      context.organizationId,
+      payload.cashPoints.length,
+    );
+
     const existing = await CashPoint.find({ organizationId: context.organizationId });
     const incomingIds = new Set(payload.cashPoints.filter((c) => c.id).map((c) => c.id.toString()));
 
@@ -37,10 +44,16 @@ export class CashPointStep extends SetupStep {
     }
 
     for (const [index, item] of payload.cashPoints.entries()) {
+      const siteId = await sitesService.resolveSiteIdForCashPoint(
+        context.organizationId,
+        item.siteId,
+      );
+
       const data = {
         name: item.name.trim(),
         status: item.status || 'active',
         displayOrder: item.displayOrder ?? index,
+        siteId,
       };
 
       if (item.id) {
@@ -72,9 +85,14 @@ export class CashPointStep extends SetupStep {
 
     if (existing) return existing;
 
+    await planLimitsService.assertCashRegisterCount(organizationId, 1);
+
+    const siteId = await sitesService.resolveSiteIdForCashPoint(organizationId, null);
+
     const [created] = await CashPoint.create([
       {
         organizationId,
+        siteId,
         name: DEFAULT_CASH_POINT_NAME,
         status: 'active',
         displayOrder: 0,
@@ -90,6 +108,7 @@ export class CashPointStep extends SetupStep {
       name: point.name,
       status: point.status,
       displayOrder: point.displayOrder,
+      siteId: point.siteId?.toString?.() ?? point.siteId ?? null,
     };
   }
 }

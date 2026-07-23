@@ -14,6 +14,12 @@ const cashPointSchema = new Schema(
       required: [true, 'La organización es obligatoria'],
     },
 
+    siteId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Site',
+      default: null,
+    },
+
     name: {
       type: String,
       required: [true, 'El nombre es obligatorio'],
@@ -44,6 +50,7 @@ const cashPointSchema = new Schema(
 );
 
 cashPointSchema.index({ organizationId: 1, status: 1 });
+cashPointSchema.index({ organizationId: 1, siteId: 1 });
 cashPointSchema.index(
   { organizationId: 1, name: 1 },
   { unique: true, collation: { locale: 'en', strength: 2 } },

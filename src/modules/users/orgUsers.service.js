@@ -4,6 +4,7 @@ import { passwordService } from '#modules/auth/password.service.js';
 import { ApiError } from '#utils/ApiError.js';
 import { auditService } from '#services/audit/audit.service.js';
 import { rbacService } from '#services/rbac/rbac.service.js';
+import { planLimitsService } from '#services/saas-billing/planLimits.service.js';
 
 export const USER_AUDIT_ACTIONS = Object.freeze({
   CREATED: 'user_created',
@@ -36,6 +37,8 @@ export class OrgUsersService {
   }
 
   async create(organizationId, actorUserId, payload, auditContext = {}) {
+    await planLimitsService.assertCanAddUser(organizationId);
+
     const email = payload.email.trim().toLowerCase();
     const existing = await User.findOne({ email }).select('_id');
     if (existing) throw new ApiError(409, 'Ya existe un usuario con ese correo');

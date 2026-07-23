@@ -84,6 +84,13 @@ const organizationSchema = new Schema(
       default: null,
     },
 
+    /** Plan comercial elegido en el registro (antes de activar / trial premium). */
+    intendedPlanId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Plan',
+      default: null,
+    },
+
     /** Estado operativo en la plataforma */
     status: {
       type: String,

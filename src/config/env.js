@@ -172,6 +172,16 @@ const env = {
 
   verificationTokenExpiresHours: parseInt(process.env.VERIFICATION_TOKEN_EXPIRES_HOURS ?? '24', 10),
 
+  /** Proveedor de correo opcional (Resend). Sin key solo se registra el enlace en logs. */
+  email: {
+    resendApiKey: process.env.RESEND_API_KEY?.trim() || null,
+    from: process.env.EMAIL_FROM?.trim() || 'Parking SaaS <onboarding@resend.dev>',
+  },
+
+  privacy: {
+    policyVersion: process.env.PRIVACY_POLICY_VERSION?.trim() || '2026-07-16',
+  },
+
   cookies: {
     httpOnly: process.env.COOKIE_HTTP_ONLY !== 'false',
     secure: process.env.COOKIE_SECURE === 'true' || isProduction,

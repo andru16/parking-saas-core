@@ -11,7 +11,7 @@ export function calculateSubscriptionEndDate(startDate, durationDays) {
  * Estado inicial de la organización según el plan (isTrialPlan en BD).
  */
 export function resolveOrganizationStatus(plan) {
+  // Self-signup siempre inicia en trial (pago → awaiting_activation / trial_premium).
   if (!plan) return 'trial';
-  if (plan.isTrialPlan || plan.code === 'trial') return 'trial';
-  return 'active';
+  return 'trial';
 }

@@ -4,6 +4,8 @@ const { Schema } = mongoose;
 
 export const SUBSCRIPTION_STATUSES = Object.freeze([
   'trial',
+  'trial_premium',
+  'awaiting_activation',
   'active',
   'grace_period',
   'expired',
@@ -19,9 +21,10 @@ export const BILLING_CYCLES = Object.freeze([
   'annual',
 ]);
 
-/** Estados con acceso operativo completo (incluye período de gracia). */
+/** Estados con acceso operativo completo (incluye período de gracia y trial premium). */
 export const OPERATIONAL_SUBSCRIPTION_STATUSES = Object.freeze([
   'trial',
+  'trial_premium',
   'active',
   'grace_period',
 ]);
